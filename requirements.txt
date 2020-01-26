@@ -1,0 +1,10 @@
+Scrapy==1.6.0
+mysql-connector-python==8.0.16
+Unidecode==1.1.1
+pyspellchecker==0.5.3
+pylint==2.3.1
+autopep8==1.4.4
+ipykernel==5.1.0
+ipython==7.4.0
+ipython-genutils==0.2.0
+ipywidgets==7.4.2
