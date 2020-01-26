@@ -1,3 +1,6 @@
+# Note, any changes to the Sql database connection must 
+# be conformed in project_runner.py and pipeline.py
+
 import scrapy
 from scrapy.crawler import CrawlerProcess
 from scrapy.utils.project import get_project_settings
@@ -16,9 +19,7 @@ process.start()
 
 
 # Sync inventory foreign key with product primary key
-update_inventory_product_id = sql_queries.SqlQueries()
-update_inventory_product_id.open_sql_connection(
-    "localhost","root","Tutti792!@#$","briary"
-    )
+update_inventory_product_id = sql_queries.SqlQueries(["localhost","root","Tutti792!@#$","briary"])
+update_inventory_product_id.open_sql_connection()
 update_inventory_product_id.sync_tables()
 update_inventory_product_id.close_sql_connection()

@@ -160,13 +160,11 @@ class FilterNonWinesPipeline(object):
 class MysqlInventoryPipeline(object):
 
     def __init__(self):
-        self.create_product_inventory_tables = sql_queries.SqlQueries()
+        self.create_product_inventory_tables = sql_queries.SqlQueries(["localhost","root","Tutti792!@#$","briary"])
 
 
     def open_spider(self, spider):
-        self.create_product_inventory_tables.open_sql_connection(
-            "localhost","root","Tutti792!@#$","briary"
-            )
+        self.create_product_inventory_tables.open_sql_connection()
         self.create_product_inventory_tables.create_tables()
 
 

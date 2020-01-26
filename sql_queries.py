@@ -3,9 +3,15 @@ import mysql.connector
 
 class SqlQueries():
 
-    def open_sql_connection(self, host_name, user_name, password, db_name):
+    def __init__(self,connect_param_list):
+        self.host_name = connect_param_list[0]
+        self.user_name = connect_param_list[1]
+        self.password = connect_param_list[2]
+        self.db_name = connect_param_list[3]
+
+    def open_sql_connection(self):
         self.db_connection = mysql.connector.connect(
-            host=host_name, user=user_name, passwd=password, database=db_name
+            host=self.host_name, user=self.user_name, passwd=self.password, database=self.db_name
         )
         self.my_cursor = self.db_connection.cursor()
 
