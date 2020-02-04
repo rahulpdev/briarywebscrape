@@ -5,9 +5,9 @@
 import re
 from unidecode import unidecode
 import mysql.connector
-import sql_queries
 from scrapy.exceptions import DropItem
 from spellchecker import SpellChecker
+import sql_queries
 
 
 class BriarywebscrapePipeline(object):
@@ -22,6 +22,18 @@ class BriarywebscrapePipeline(object):
     wine_vintage_regex = r"20\d{2}|19\d{2}"
     wine_dimension_regex = r"\d{3}(?i)ml|\d%s\.%s\d{1,3}(?i)l"
     wine_varietal_regex = r"\\|\.| ,|/"
+    regex = {
+        'currency' : r"\$",
+        'punctuation' : r"\(|\)|-",
+        'whitespace' : r"\s+",
+        'wine' : r" (?i)wine\b",
+        'usa' : r"\b(?i)usa*|\b(?i)u.s.a*",
+        'ny' : r"\b(?i)ny|\b(?i)n.y.",
+        'wine_vintage' : r"20\d{2}|19\d{2}",
+        'wine_dimension' : r"\d{3}(?i)ml|\d%s\.%s\d{1,3}(?i)l",
+        'wine_varietal' : r"\\|\.| ,|/",
+        'champagne' : r"\b(?i)champagne"
+    }
     wine_varietal_dict = {
         'Grenache':['Garnacha','Grenache Blanc','Garnacha Blanc'],
         'Bordeaux':['Bordeaux Blanc'],
@@ -37,27 +49,50 @@ class BriarywebscrapePipeline(object):
     def __init__(self):
         self.spell = SpellChecker(language=None, case_sensitive=False)
         self.spell.word_frequency.load_text_file('./varietal_dictionary.txt')
+        read_db_tables = sql_queries.SqlQueries()
+        read_db_tables.open_sql_connection()
+        # self.db_varietals = read_db_tables.read_table('varietal')
+        self.db_varietals = read_db_tables.read_varietal()
+        self.wine_country_dict = {}
+        # db_wine_countries = read_db_tables.read_table('terroir')
+        db_wine_countries = read_db_tables.read_terroir()
+        for i in db_wine_countries:
+            if i[2] is not None:
+                if i[1] not in self.wine_country_dict.keys():
+                    self.wine_country_dict[i[1]] = [i[2]]
+                else:
+                    self.wine_country_dict[i[1]].append(i[2])
+        read_db_tables.close_sql_connection()
 
-    def spell_check(self,phrase,word_separator):
-        word_split = phrase.split(word_separator)
-        if "," in word_separator:
-            word_split = sorted(word_split)
-        new_phrase = []
+
+    def spell_check(self,phrase,phrase_separator):
+        phrase_list = phrase.split(phrase_separator)
+        new_phrase_list = []
+        if "," in phrase_separator:
+            phrase_list = sorted(phrase_list)
         # Spell check each word in phrase and standardise each wine varietal in blend
-        for i in word_split:
+        for i in phrase_list:
             i = self.spell.correction(i)
             i = i.title()
             for key in self.wine_varietal_dict:
                 if i in self.wine_varietal_dict[key]:
                     i = key
-            new_phrase.append(i)
-        new_phrase = word_separator.join(new_phrase)
+            # for varietal in self.db_varietals:
+            #     if i == varietal[2]:
+            #         i = varietal[1]
+            new_phrase_list.append(i)
+        new_phrase = phrase_separator.join(new_phrase_list)
+        del new_phrase_list
         # Standardise each wine varietal
         for key in self.wine_varietal_dict:
             if new_phrase in self.wine_varietal_dict[key]:
                 new_phrase = key
+        # for varietal in self.db_varietals:
+        #     if new_phrase == varietal[2]:
+        #         new_phrase = varietal[1]
 
         return new_phrase
+
 
     # Note item is a dictionary object from the items module with each scraped attribute a key
     def process_item(self, item, spider):
@@ -160,20 +195,20 @@ class FilterNonWinesPipeline(object):
 class MysqlInventoryPipeline(object):
 
     def __init__(self):
-        self.create_product_inventory_tables = sql_queries.SqlQueries(["localhost","root","Tutti792!@#$","briary"])
+        self.item_product_inventory = sql_queries.SqlQueries()
 
 
     def open_spider(self, spider):
-        self.create_product_inventory_tables.open_sql_connection()
-        self.create_product_inventory_tables.create_tables()
+        self.item_product_inventory.open_sql_connection()
+        self.item_product_inventory.create_tables()
 
 
     def close_spider(self, spider):
-        self.create_product_inventory_tables.close_sql_connection()
+        self.item_product_inventory.close_sql_connection()
 
 
     def process_item(self, item, spider):
-        self.create_product_inventory_tables.update_tables(
+        self.item_product_inventory.insert_inventory(
             item['product_dimension'],
             item['wine_vintage'],
             item['product_price'],

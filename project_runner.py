@@ -19,7 +19,8 @@ process.start()
 
 
 # Sync inventory foreign key with product primary key
-update_inventory_product_id = sql_queries.SqlQueries(["localhost","root","Tutti792!@#$","briary"])
-update_inventory_product_id.open_sql_connection()
-update_inventory_product_id.sync_tables()
-update_inventory_product_id.close_sql_connection()
+sync_items_products = sql_queries.SqlQueries()
+sync_items_products.open_sql_connection()
+sync_items_products.insert_product_update_inventory()
+sync_items_products.insert_item_update_product()
+sync_items_products.close_sql_connection()
