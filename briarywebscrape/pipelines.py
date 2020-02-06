@@ -10,6 +10,26 @@ from spellchecker import SpellChecker
 import sql_queries
 
 
+class ReadMysqlPipeline(object):
+    read_table = sql_queries.SqlQueries()
+
+    def __init__(self):
+        ReadMysqlPipeline.read_table.open_sql_connection()
+        # self.db_varietals = read_db_tables.read_table('varietal')
+        self.db_varietals = ReadMysqlPipeline.read_table.read_varietal()
+        self.wine_country_dict = {}
+        # db_wine_countries = read_db_tables.read_table('terroir')
+        self.db_wine_countries = ReadMysqlPipeline.read_table.read_terroir()
+        for i in self.db_wine_countries:
+            if i[2] is not None:
+                if i[1] not in self.wine_country_dict.keys():
+                    self.wine_country_dict[i[1]] = [i[2]]
+                else:
+                    self.wine_country_dict[i[1]].append(i[2])
+        del self.db_wine_countries
+        ReadMysqlPipeline.read_table.close_sql_connection()
+
+
 class BriarywebscrapePipeline(object):
     product_image_src_separator = "src="
     product_image_thumbnail_separator = "&w="
@@ -49,20 +69,6 @@ class BriarywebscrapePipeline(object):
     def __init__(self):
         self.spell = SpellChecker(language=None, case_sensitive=False)
         self.spell.word_frequency.load_text_file('./varietal_dictionary.txt')
-        read_db_tables = sql_queries.SqlQueries()
-        read_db_tables.open_sql_connection()
-        # self.db_varietals = read_db_tables.read_table('varietal')
-        self.db_varietals = read_db_tables.read_varietal()
-        self.wine_country_dict = {}
-        # db_wine_countries = read_db_tables.read_table('terroir')
-        db_wine_countries = read_db_tables.read_terroir()
-        for i in db_wine_countries:
-            if i[2] is not None:
-                if i[1] not in self.wine_country_dict.keys():
-                    self.wine_country_dict[i[1]] = [i[2]]
-                else:
-                    self.wine_country_dict[i[1]].append(i[2])
-        read_db_tables.close_sql_connection()
 
 
     def spell_check(self,phrase,phrase_separator):
@@ -204,6 +210,8 @@ class MysqlInventoryPipeline(object):
 
 
     def close_spider(self, spider):
+        self.item_product_inventory.insert_product_update_inventory()
+        self.item_product_inventory.insert_item_update_product()
         self.item_product_inventory.close_sql_connection()
 
 
@@ -225,173 +233,3 @@ class MysqlInventoryPipeline(object):
 
         return item
 
-
-class MysqlInventoryPipeline2(object):
-
-    def open_spider(self, spider):
-        self.db_connection = mysql.connector.connect(
-            host="localhost", user="root", passwd="Tutti792!@#$", database="briary"
-        )
-        self.my_cursor = self.db_connection.cursor()
-        try:
-            self.my_cursor.execute('''
-                CREATE TABLE products2 (
-                    id INT NOT NULL AUTO_INCREMENT,
-                    product_producer VARCHAR(100),
-                    product_title VARCHAR(100) NOT NULL,
-                    wine_country VARCHAR(100),
-                    wine_region VARCHAR(100),
-                    wine_sub_region VARCHAR(100),
-                    wine_type VARCHAR(100) NOT NULL,
-                    wine_varietal VARCHAR(100),
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    CONSTRAINT wine_product UNIQUE (product_title, wine_country, wine_type, wine_varietal),
-                    PRIMARY KEY (id)
-                )
-            ''')
-        except mysql.connector.ProgrammingError:
-            pass
-        else:
-            self.db_connection.commit()
-        try:
-            self.my_cursor.execute('''
-                CREATE TABLE inventory2 (
-                    product_dimension VARCHAR(100) NOT NULL,
-                    product_id INT,
-                    product_image_url VARCHAR(200),
-                    product_price DECIMAL(10, 2) NOT NULL,
-                    product_producer VARCHAR(100),
-                    product_title VARCHAR(100) NOT NULL,
-                    store_domain VARCHAR(100) NOT NULL,
-                    wine_country VARCHAR(100),
-                    wine_region VARCHAR(100),
-                    wine_sub_region VARCHAR(100),
-                    wine_type VARCHAR(100) NOT NULL,
-                    wine_varietal VARCHAR(100),
-                    wine_vintage INT(4),
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    CONSTRAINT wine_inventory UNIQUE (product_dimension, product_title, store_domain, wine_country, wine_type, wine_varietal, wine_vintage),
-                    FOREIGN KEY (product_id) REFERENCES products2(id)
-                )
-            ''')
-        except mysql.connector.ProgrammingError:
-            pass
-        else:
-            self.db_connection.commit()
-
-
-    def close_spider(self, spider):
-        self.db_connection.close()
-
-    def process_item(self, item, spider):
-        self.my_cursor.execute('''
-            INSERT INTO inventory2 (
-                product_dimension,
-                product_image_url,
-                product_price,
-                product_producer,
-                product_title,
-                store_domain,
-                wine_country,
-                wine_region,
-                wine_sub_region,
-                wine_type,
-                wine_varietal,
-                wine_vintage
-            ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            ON DUPLICATE KEY UPDATE
-            product_price = VALUES (product_price),
-            last_updated = NOW()            
-        ''', (
-            item['product_dimension'],
-            item['product_image_url'],
-            item['product_price'],
-            item['product_producer'],
-            item['product_title'],
-            item['store_domain'],
-            item['wine_country'],
-            item['wine_region'],
-            item['wine_sub_region'],
-            item['wine_type'],
-            item['wine_varietal'],
-            item['wine_vintage']
-        ))
-        self.db_connection.commit()
-        return item
-
-
-# Drop duplicate products that vary only by dimension and vintage
-class FilterDuplicatesPipeline(object):
-
-    def __init__(self):
-        self.unique_products = set()
-
-    def process_item(self, item, spider):
-        wine_product = (item['product_title'], item['wine_country'], item['wine_region'], item['wine_sub_region'], item['wine_type'],item['wine_varietal'])
-        if wine_product in self.unique_products:
-            raise DropItem("Duplicate item found: %s" % item)
-        else:
-            self.unique_products.add(wine_product)
-            return item
-
-
-class MysqlProductPipeline2(object):
-
-    def open_spider(self, spider):
-        self.db_connection = mysql.connector.connect(
-            host="localhost", user="root", passwd="Tutti792!@#$", database="briary"
-        )
-        self.my_cursor = self.db_connection.cursor()
-        try:
-            self.my_cursor.execute('''
-                CREATE TABLE products2 (
-                    id INT NOT NULL AUTO_INCREMENT,
-                    product_producer VARCHAR(100),
-                    product_title VARCHAR(100) NOT NULL,
-                    wine_country VARCHAR(100),
-                    wine_region VARCHAR(100),
-                    wine_sub_region VARCHAR(100),
-                    wine_type VARCHAR(100) NOT NULL,
-                    wine_varietal VARCHAR(100),
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    CONSTRAINT wine_product UNIQUE (product_title, wine_country, wine_type, wine_varietal),
-                    PRIMARY KEY (id)
-                )
-            ''')
-        except mysql.connector.ProgrammingError:
-            pass
-        else:
-            self.db_connection.commit()
-
-
-    def close_spider(self, spider):
-        self.db_connection.close()
-    
-    # Note an alternative is to use INSERT IGNORE Sql query
-    def process_item(self, item, spider):
-        try:
-            self.my_cursor.execute('''
-                INSERT INTO products2 (
-                    product_producer,
-                    product_title,
-                    wine_country,
-                    wine_region,
-                    wine_sub_region,
-                    wine_type,
-                    wine_varietal
-                ) VALUES(%s,%s,%s,%s,%s,%s,%s)
-            ''', (
-                item['product_producer'],
-                item['product_title'],
-                item['wine_country'],
-                item['wine_region'],
-                item['wine_sub_region'],
-                item['wine_type'],
-                item['wine_varietal']
-            ))
-        except mysql.connector.errors.IntegrityError:
-            pass
-        else:
-            self.db_connection.commit()
-        return item
