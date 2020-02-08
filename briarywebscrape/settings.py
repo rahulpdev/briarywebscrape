@@ -91,5 +91,5 @@ HTTPCACHE_ENABLED = True
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-CLEARDB_DATABASE_URL = 'mysql://ba3b3f279ac8f6:4c1ed166@us-cdbr-iron-east-04.cleardb.net/heroku_2cc23cc55b91214?reconnect=true'
+CLEARDB_DATABASE_URL = 'mysql://ba3b3f279ac8f6:4c1ed166@us-cdbr-iron-east-04.cleardb.net/heroku_2cc23cc55b91214'
 CLEARDB_DATABASE = 'heroku_2cc23cc55b91214'
