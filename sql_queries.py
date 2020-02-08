@@ -33,7 +33,7 @@ class SqlQueries():
                     wine_country VARCHAR(100),
                     wine_region VARCHAR(100),
                     wine_sub_region VARCHAR(100),
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     CONSTRAINT wine_item UNIQUE (wine_varietal, wine_country, wine_region, wine_sub_region),
                     PRIMARY KEY (item_id)
                 )
@@ -55,7 +55,7 @@ class SqlQueries():
                     wine_country VARCHAR(100),
                     wine_region VARCHAR(100),
                     wine_sub_region VARCHAR(100),
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     CONSTRAINT wine_product UNIQUE (product_title, product_producer, wine_type, wine_varietal, wine_country, wine_region, wine_sub_region),
                     PRIMARY KEY (product_id),
                     FOREIGN KEY (item_id) REFERENCES item(item_id)
@@ -84,8 +84,7 @@ class SqlQueries():
                     wine_country VARCHAR(100),
                     wine_region VARCHAR(100),
                     wine_sub_region VARCHAR(100),
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     CONSTRAINT wine_inventory UNIQUE (product_dimension, wine_vintage, store_domain, product_title, product_producer, wine_type, wine_varietal, wine_country, wine_region, wine_sub_region),
                     PRIMARY KEY (id),
                     FOREIGN KEY (product_id) REFERENCES product(product_id),
