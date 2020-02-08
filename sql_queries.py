@@ -4,7 +4,7 @@ from configparser import ConfigParser
 
 class SqlQueries():
 
-    def __init__(self,filename='config.ini',section='mysql'):
+    def __init__(self,filename='scrapy.cfg',section='mysql'):
         self.parser = ConfigParser()
         self.parser.read(filename)
         self.db_params = {}

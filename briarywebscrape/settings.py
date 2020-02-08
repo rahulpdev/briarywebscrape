@@ -64,7 +64,7 @@ DEFAULT_REQUEST_HEADERS = {
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'briarywebscrape.pipelines.ReadMysqlPipeline': 200,
+  #  'briarywebscrape.pipelines.ReadMysqlPipeline': 200,
    'briarywebscrape.pipelines.BriarywebscrapePipeline': 300,
    'briarywebscrape.pipelines.FilterNonWinesPipeline': 400,
    'briarywebscrape.pipelines.MysqlInventoryPipeline': 500

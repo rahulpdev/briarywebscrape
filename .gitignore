@@ -2,3 +2,8 @@ __pycache__/
 .scrapy/
 config.ini
 project_runner.py
+.vscode/
+build/
+dbs/
+eggs/
+project.egg-info/
